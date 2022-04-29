@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class BasketTest {
 
     @DisplayName("basket provides its total value when containing...")
-    @MethodSource
+    @MethodSource("basketProvidesTotalValue")
     @ParameterizedTest(name = "{0}")
     void basketProvidesTotalValue(String description, String expectedTotal, Iterable<Item> items) {
         final Basket basket = new Basket();
@@ -27,7 +27,10 @@ class BasketTest {
         return Stream.of(
                 noItems(),
                 aSingleItemPricedPerUnit(),
-                multipleItemsPricedPerUnit(),
+                discountedItemsNotSatisfyingDiscountCondition(),
+                discountedItemsSatisfyingDiscountCondition(),
+                discountedItemsSatisfyingDiscountConditionAndAnAdditionalItemOfTheSameProduct(),
+                discountedItemsSatisfyingMultipleDiscountCondition(),
                 aSingleItemPricedByWeight(),
                 multipleItemsPricedByWeight()
         );
@@ -43,9 +46,24 @@ class BasketTest {
         );
     }
 
-    private static Arguments multipleItemsPricedPerUnit() {
-        return Arguments.of("multiple items priced per unit", "2.04",
+    private static Arguments discountedItemsNotSatisfyingDiscountCondition() {
+        return Arguments.of("multiple items priced per unit with not discounted items", "2.04",
                 Arrays.asList(aPackOfDigestives(), aPintOfMilk()));
+    }
+
+    private static Arguments discountedItemsSatisfyingDiscountCondition() {
+        return Arguments.of("multiple items priced per unit with discounted items", "2.04",
+                Arrays.asList(aPackOfDigestives(), aPintOfMilk(), aPintOfMilk()));
+    }
+
+    private static Arguments discountedItemsSatisfyingDiscountConditionAndAnAdditionalItemOfTheSameProduct() {
+        return Arguments.of("multiple items priced per unit with partially discounted items", "2.53",
+                Arrays.asList(aPackOfDigestives(), aPintOfMilk(), aPintOfMilk(), aPintOfMilk()));
+    }
+
+    private static Arguments discountedItemsSatisfyingMultipleDiscountCondition() {
+        return Arguments.of("multiple items priced per unit with multiple discounted items", "2.53",
+                Arrays.asList(aPackOfDigestives(), aPintOfMilk(), aPintOfMilk(), aPintOfMilk(), aPintOfMilk()));
     }
 
     private static Arguments aSingleItemPricedPerUnit() {
@@ -57,7 +75,9 @@ class BasketTest {
     }
 
     private static Item aPintOfMilk() {
-        return new Product(new BigDecimal("0.49")).oneOf();
+        Product aPintOfMilk = new Product(new BigDecimal("0.49"));
+        new BuyOneGetOneFree().addProduct(aPintOfMilk);
+        return aPintOfMilk.oneOf();
     }
 
     private static Item aPackOfDigestives() {
